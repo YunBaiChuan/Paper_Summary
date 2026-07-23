@@ -26,17 +26,17 @@
 
 ## 监督离散hash
 
-![alt text](image.png)
+<img width="607" height="101" alt="image" src="https://github.com/user-attachments/assets/7a2d638c-cd03-4594-abd7-3b655ddbdb16" />
 
 **首先提出了多分类的预测公式，就是比较经典的那种向量形式，其中算出来的最大概率为预测的那个分类**
 
-![alt text](image-1.png)
+<img width="607" height="167" alt="image-1" src="https://github.com/user-attachments/assets/b4b3e74f-565d-4692-a581-3638048f81b2" />
 
 **然后给出了我们需要优化的损失函数，这里的$F$函数是hash函数，通过$F(x_i)$我们会得到一个连续值的向量（hash编码），比如$[0.5, -1.2, 0.8, ..., -0.3]$。之后再在外面套上一层符号函数$sgn$，也就是离散约束，将其转化为二进制编码。之后再用这个二进制编码去训练$W_i$和$F$**
 
 **传统的松弛化就是去掉外面这一层离散约束$sgn$，直接用连续值的向量，也就是连续hash值编码去训练$W_i$和$F$，得到最优解之后，再在b套一层离散约束$sgn$。但这样做的问题就是会导致量化误差的积累，使得训练的$W_i$和$F$不够准确**
 
-![alt text](image-2.png)
+<img width="692" height="190" alt="image-2" src="https://github.com/user-attachments/assets/fc5b9ba4-1001-4d77-b48b-6d08ce74b771" />
 
 **于是为了解决这个问题，我们重新表述了损失函数公式。主要就是在原先的基础上，增加了新的惩罚项，这个惩罚项挺巧妙的。他主要是衡量hash函数得到的连续值向量，与我们想要得到的最优离散二进制hash之间的差异性，当惩罚系数$v$非常大时，这个公式其实就变成了(2)。并且我们可以发现，直接优化(3)这个式子，我们最终得到的二进制编码正是前面所说的联合优化的最优线性分类编码**
 
