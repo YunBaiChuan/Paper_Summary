@@ -94,29 +94,16 @@ $$
 
 **迹相关的矩阵求导：**
 
-$$
-\begin{array}{|c|c|}
-\hline \\
-f(X) & \dfrac{\partial f}{\partial X} \\[10pt]
-\hline \\
-\text{tr}(AX) & A^T \\[10pt]
-\hline \\
-\text{tr}(X^T A) & A \\[10pt]
-\hline \\
-\text{tr}(AXB) & A^T B^T \\[10pt]
-\hline \\
-\text{tr}(AX^T B) & BA \\[10pt]
-\hline \\
-\text{tr}(X^T A X) & (A + A^T)X \\[10pt]
-\hline \\
-\text{tr}(X A X^T) & X(A + A^T) \\[10pt]
-\hline \\
-\text{tr}(X^T A X B) & AXB + A^T X B^T \\[10pt]
-\hline \\
-\text{tr}(X^n) & n(X^{n-1})^T \\[10pt]
-\hline
-\end{array}
-$$
+| 函数 `f(X)` | 导数 `∂f/∂X` |
+| :--- | :--- |
+| `tr(AX)` | `A^T` |
+| `tr(X^T A)` | `A` |
+| `tr(AXB)` | `A^T B^T` |
+| `tr(AX^T B)` | `BA` |
+| `tr(X^T A X)` | `(A + A^T)X` |
+| `tr(X A X^T)` | `X(A + A^T)` |
+| `tr(X^T A X B)` | `AXB + A^T X B^T` |
+| `tr(X^n)` | `n(X^{n-1})^T` |
 
 ### 2.2. L2损失的联合学习
 
