@@ -26,17 +26,17 @@
 
 ## 2. 监督离散hash
 
-![alt text](image.png)
+<img width="607" height="101" alt="image" src="https://github.com/user-attachments/assets/1adde020-f664-413f-a1d7-903a403b0122" />
 
 **首先提出了多分类的预测公式，就是比较经典的那种向量形式，其中算出来的最大概率为预测的那个分类**
 
-![alt text](image-1.png)
+<img width="607" height="167" alt="image-1" src="https://github.com/user-attachments/assets/c7a6af0d-f91f-468c-b462-1121cd6257c3" />
 
-**然后给出了我们需要优化的损失函数，这里的$F$函数是hash函数，通过$F(x_i)$我们会得到一个连续值的向量（hash编码），比如$[0.5, -1.2, 0.8, ..., -0.3]$。之后再在外面套上一层符号函数$sgn$，也就是离散约束，将其转化为二进制编码。之后再用这个二进制编码去训练```W_i```和$F$**
+**然后给出了我们需要优化的损失函数，这里的$F$函数是hash函数，通过$F(x_i)$我们会得到一个连续值的向量（hash编码），比如$[0.5, -1.2, 0.8, ..., -0.3]$。之后再在外面套上一层符号函数$sgn$，也就是离散约束，将其转化为二进制编码。之后再用这个二进制编码去训练$W_i$和$F$**
 
 **传统的松弛化就是去掉外面这一层离散约束$sgn$，直接用连续值的向量，也就是连续hash值编码去训练$W_i$和$F$，得到最优解之后，再在b套一层离散约束$sgn$。但这样做的问题就是会导致量化误差的积累，使得训练的$W_i$和$F$不够准确**
 
-![alt text](image-2.png)
+<img width="692" height="190" alt="image-2" src="https://github.com/user-attachments/assets/d21e15d4-af4f-49c8-b27f-0e574941a18a" />
 
 **于是为了解决这个问题，我们重新表述了损失函数公式。主要就是在原先的基础上，增加了新的惩罚项，这个惩罚项挺巧妙的。他主要是衡量hash函数得到的连续值向量，与我们想要得到的最优离散二进制hash之间的差异性，当惩罚系数$v$非常大时，这个公式其实就变成了(2)。并且我们可以发现，直接优化(3)这个式子，我们最终得到的二进制编码正是前面所说的联合优化的最优线性分类编码**
 
@@ -44,11 +44,11 @@
 
 ### 2.1. 通过非线性嵌入逼近$b_i$
 
-![alt text](image-3.png)
+<img width="478" height="70" alt="image-3" src="https://github.com/user-attachments/assets/0e4ed709-ffff-4434-9eb5-3d933dc2b701" />
 
 **这里采用的是一种简洁又高效的嵌入学习公式，可以看到他是非线性的形式。其中$\phi(x)$是m维度的列向量，他是通过RBF核映射得到的高维向量。简单来说就是通过原数据的高维映射，来解决低维度下的线性不可分问题。然后$P^T$表示的是$P$向量的转置，这里$P$向量是$m * L$的。因此$P$转置后与$\phi(x)$相乘，就可以得到投影后固定为$L * 1$的低维度列向量了。注意这里的L刚好了我们前面的提到的hash码长度L一致**
 
-![alt text](image-4.png)
+<img width="557" height="63" alt="image-4" src="https://github.com/user-attachments/assets/db27f4ac-0a48-411f-a57c-4c14aff1faa3" />
 
 **如果我们固定(3)中的B，就可以通过线性代数的方式求(5)，具体公式推导如下：**
 
@@ -107,15 +107,15 @@ $$
 
 ### 2.2. L2损失的联合学习
 
-![alt text](image-5.png)
+<img width="727" height="175" alt="image-5" src="https://github.com/user-attachments/assets/8c316d64-8739-4e40-8eaf-6908ca0f14a1" />
 
 **对于(3)来说，我们的损失函数选择是灵活的，这里选择L2损失函数，也就是常用的平方损失函数，他和L2正则化类似，都用到了平方**
 
-![alt text](image-6.png)
+<img width="666" height="125" alt="image-6" src="https://github.com/user-attachments/assets/ba0b2776-b4c6-403c-baa8-c02cb5e200ab" />
 
 **接着对(6)做了一个转化，直接把$n$个$b_i$标签整合成了B，其规模为$L*n$；$W$的规模是$L * C$；$Y$的规模是$C * n$。值得注意的是，公式中的小写形式向量都是列向量为$L * 1$**
 
-![alt text](image-7.png)
+<img width="530" height="72" alt="image-7" src="https://github.com/user-attachments/assets/e37d195d-5c96-48c1-8a1f-a0516aff20e3" />
 
 **如果我们固定(7)中的B，就可以用线性代数算出(8)，推导如下：**
 
@@ -155,15 +155,15 @@ $$
 
 **然后(7)在B有离散约束的情况下是很难求解的，但如果除了B以外的其他变量都固定，我们可以重写式子(7)如下：即除了B以外的W，F，Y都看作常量，只需要找与B相关的式子**
 
-![alt text](image-8.png)
+<img width="612" height="117" alt="image-8" src="https://github.com/user-attachments/assets/4bf08e64-759f-4a6e-bea2-2e7ebb6ff393" />
 
 **然后通过平方展开、迹（Tr）的性质，即 $Tr(A) = Tr(A^T)$ 以及W，B，Y都看作常数，可以得到以下展开式：**
 
-![alt text](image-9.png)
+<img width="646" height="167" alt="image-9" src="https://github.com/user-attachments/assets/915078ec-1780-42fb-8c6a-128ff6c8bfae" />
 
 **进一步化简推导就可以得到(11)**
 
-![alt text](image-10.png)
+<img width="682" height="180" alt="image-10" src="https://github.com/user-attachments/assets/a1c0601d-e531-4076-837a-77ddefbef8c6" />
 
 **具体推导过程如下：我们具体优化时不会关注与B无关的纯常数，因此可以去掉**
 
@@ -193,7 +193,7 @@ $$
 
 **因此利用分块来重写(11)，先是第一项**
 
-![alt text](image-11.png)
+<img width="698" height="156" alt="image-11" src="https://github.com/user-attachments/assets/1e413a4c-4203-4877-bf98-3b132d2b74d0" />
 
 **推导如下：**
 
@@ -225,17 +225,17 @@ $$
 
 **推导结果与(12)一致**
 
-![alt text](image-12.png)
+<img width="512" height="62" alt="image-12" src="https://github.com/user-attachments/assets/20819f13-0f96-4987-8d35-01bb86ec3030" />
 
 **同理，我们可以得到(13)**
 
 **接着整合(12)、(13)到(11)式，可以得到以下式子**
 
-![alt text](image-13.png)
+<img width="520" height="108" alt="image-13" src="https://github.com/user-attachments/assets/099b4502-d22f-4a33-b026-8629059c1057" />
 
 **并且这个式子能够被优化，结果如下：**
 
-![alt text](image-14.png)
+<img width="501" height="57" alt="image-14" src="https://github.com/user-attachments/assets/6d41aa68-9113-433d-aeb9-f2fb7008354e" />
 
 **推导如下：要使得取min，那么行向量$(v^TW^{'T}B^{'} - q^T)$的每一个元素，和对应的列向量z应该相反，即有**
 
@@ -251,29 +251,29 @@ $$
 
 ### 2.3. 铰链损失的联合学习
 
-![alt text](image-15.png)
+<img width="678" height="197" alt="image-15" src="https://github.com/user-attachments/assets/b8807a05-9788-4c22-ac3d-b3625e7fd297" />
 
 **在上一小节中，我们用的是L2损失函数，这里就把损失函数换成铰链损失函数即可，一般是SVM会用这个损失函数**
 
 **同理，我们算$B$的时候要固定$W$和$F$，也就是把他们当作常量，此时与$B$相关的式子整理出来就是：**
 
-![alt text](image-16.png)
+<img width="637" height="157" alt="image-16" src="https://github.com/user-attachments/assets/0abb109f-1867-4ff9-b3a1-62672f07dc6b" />
 
 **对于约束(18)，我们可以进行进一步的变换**
 
-![alt text](image-17.png)
+<img width="540" height="147" alt="image-17" src="https://github.com/user-attachments/assets/fed15df5-d83f-46ef-bf77-7d8131f5c9de" />
 
 **接着将(19)带回到(17)中，由于此时知道(19) >= 0，那么就可以把他直接带入(17)中，一起优化，就不再需要约束条件了，相当于是把它作为惩罚项，其中惩罚项因子$\delta$固定为$1/v$**
 
-![alt text](image-18.png)
+<img width="673" height="137" alt="image-18" src="https://github.com/user-attachments/assets/65a1770c-0795-4f57-9b4a-99cff3eed9a7" />
 
 **然后我们可以进一步化简得到**
 
-![alt text](image-19.png)
+<img width="556" height="142" alt="image-19" src="https://github.com/user-attachments/assets/2336efde-9ec3-4487-b9bf-ec1c02cc0efc" />
 
 **这个式子能够被优化，其结果如下：**
 
-![alt text](image-20.png)
+<img width="556" height="92" alt="image-20" src="https://github.com/user-attachments/assets/5fe07bf8-fab8-4c3f-93c3-386904207c5f" />
 
 **总结下这两种方法：L2损失的联合学习式子更简单，思想量比较大，主要是用DCC迭代优化所有样本的同一位hash码$z$；铰链损失的联合学习式子更复杂，思维量不大，主要是直接算每个样本的所有hash码$b_i$**
 
