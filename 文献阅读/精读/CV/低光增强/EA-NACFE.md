@@ -20,13 +20,13 @@
 
 ### 2.1. 准备工作和动机
 
-![alt text](image.png)
+<img width="917" height="62" alt="image" src="https://github.com/user-attachments/assets/2135f1cd-e7fd-4ab9-97b5-42fba42fb8ef" />
 
 **首先令$X\in[0, 1]^{m * n * 3}$为一张，三通道且每个像素值是经过归一化到$[0, 1]$的RGB彩色图片。我们采用一个三维非线性映射来作为每个像素点的增强函数，那么此时每个像素点的具体增益就是增益后的值-原先的值，也就是：**
 
-![alt text](image-1.png)
+<img width="907" height="61" alt="image-1" src="https://github.com/user-attachments/assets/44227366-8490-4b43-918f-98fe94454aa4" />
 
-![alt text](<Screenshot 2026-07-26 215906.png>)
+<img width="487" height="487" alt="Screenshot 2026-07-26 215906" src="https://github.com/user-attachments/assets/71388d93-1e1b-461c-a21f-bba9a50a9301" />
 
 **并且从$x\in[0, 1]$映射图中我们可以看到，这个映射主要是增强了中-暗区域，然后亮区域接近饱和，从而增强了整体的亮度。但$\triangle x$会不必要的放大暗区域中的噪声，以及降低高方差区域（边缘）的结构保真度。为了解决这个问题，我们将噪声抑制和结构保真集成到了增强过程中，得到了一个统一的公式，即通过局部图像特征来自动平衡对比增强和正则化**
 
@@ -34,14 +34,14 @@
 
 **现实世界中的低光照图片通常受到信号相关的噪声影响，并且传感器的参数通常不可用。因此，我们通过将基于方差的估计头继承到增强过程中，来逼近局部噪声强度。对于每个像素点$(i, j)$来说，我们有以下公式：**
 
-![alt text](image-2.png)
+<img width="827" height="305" alt="image-2" src="https://github.com/user-attachments/assets/1ad1dbab-b087-4abd-96d9-81875642a249" />
 
 **对于(3)和(4)来说，就是简单的算正方形邻域中的均值和方差。对于(5)来说，他就是利用局部方差来估计当前点是否为高光平滑（$\eta$小）或者高方差/噪声（$\eta$大）**
 
-![alt text](image-3.png)
+<img width="817" height="51" alt="image-3" src="https://github.com/user-attachments/assets/966376d0-3731-4da1-8fd8-790fe7c38bda" />
 
 **当然仅凭局部方差是无法分辨出当前像素点到底是高方差边缘，还是噪声的，我们要额外引入梯度来进行识别，这里采用的是索贝尔算子**
 
-![alt text](image-4.png)
+<img width="827" height="50" alt="image-4" src="https://github.com/user-attachments/assets/7d7276d1-f61d-4db9-bbbd-d0409e608d23" />
 
 **此时更新得到(7)，其实就是在原有的$\eta(i, j)$公式上*了一个$(1 - \lambda_{edge}||g(i, j)||)$边缘保留式子，其中$\lambda_{edge} = 0.5$，指的是保留强度。对于(7)来说，如果当前点是边缘，那么$\lambda_{edge}||g(i, j)||$就会很大，而$(1 - \lambda_{edge}||g(i, j)||)$就会很小，此时得到的$\eta^{'}(i, j)$就会很小，从而该像素点被保留下来。这个式子不仅抑制了同质区域中（局部的矩形邻域）的噪声，还保留了高梯度的边缘信息，能够更可靠的分离噪声和真实图像**
