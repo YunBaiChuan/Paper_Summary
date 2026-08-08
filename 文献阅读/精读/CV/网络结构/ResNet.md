@@ -10,13 +10,13 @@
 
 **深度卷积网络在图像识别上有很多突破性的成果，并且越深的网络可以整合更多低/中/高级的特征，很多比赛上面取得比较好成绩的模型，无一例外都很深。当我们想堆叠更多层，获得更好的效果时，阻碍出现了。这个阻碍也就是梯度消失/爆炸，我们必须得解决这个阻碍才能实现在更深的网络中，获得更好的效果**
 
-![alt text](<Screenshot 2026-07-17 225155.png>)
+<img width="646" height="357" alt="Screenshot 2026-07-17 225155" src="https://github.com/user-attachments/assets/84ad12ca-a1ab-4b8e-a7c7-d5e67e122065" />
 
 **首先有个解决方案就是在网络初始化时进行归一化操作，并且在网络训练时的中间层中，引入归一化层，这可以大大解决梯度消失/爆炸这个阻碍，能将网络深度提高到10多层。但是更深层还是不行，会出现退化问题，即产生更大的误差，通过在CIFAR-10数据集上进行的测试，也可以证明这一点**
 
 **那有没有什么网络的构造方式，能证明更深的网络是可以获得更好效果的？考虑在原先的网络中，加上恒等映射的堆叠层，此时网络更深，而且仅仅是学习如何原封不动，按道理来说效果是不会比原来差的。但实验表明他的效果反而更差了，说明问题不是出在网络结构上，而是出在如何学习上面**
 
-![alt text](<Screenshot 2026-07-17 225212.png>)
+<img width="460" height="270" alt="Screenshot 2026-07-17 225212" src="https://github.com/user-attachments/assets/db37c4a2-48f0-466a-a972-b58f3c16169f" />
 
 **因此，提出了一种新的学习方式，也就是学习残差。他主要是将原先训练时需要的底层映射$H(x)$，改成另一种映射，也就是残差映射$F(x) = H(x) - x$，那么此时的底层映射其实就是$H(x) = F(x) + x$。我们只需要训练残差$F(x)$，然后在输出层添加一个恒等映射x的跳跃连接，就可以得到底层映射$H(x)$了。这种方式不仅不会增加额外参数，也不会使得训练变得更加复杂。并且在极端情况下，如果恒等映射x就是最优解，那我们要使得目标输出$H(x)$尽量接近x，就从原来的拟合x到了现在残差$F(x)$优化到0，后者会更容易实现**
 
@@ -52,15 +52,15 @@
 
 **基于上面设计的基准网络，我们在它上面插入了跳跃连接，就变成了对应的残差网络版本。这里是每个两层引入一个跳跃连接，当维度不变时就可以直接相加，否则我们就需要进行维度匹配，也就是对x进行升维。那么升维有两种方案：1.全部添加0；2.投影，用1 * 1卷积实现。对于这两种方式来说，如果图像尺寸发生了变化，那就按步长stride为2执行即可，毕竟都是下采样。三种网络架构如下：**
 
-![alt text](image.png)
+<img width="378" height="835" alt="image" src="https://github.com/user-attachments/assets/bf221d30-b776-4139-82de-77a74c8247f2" />
 
 **不同层数的ResNet网络比较如下：**
 
-![alt text](image-1.png)
+<img width="1026" height="447" alt="image-1" src="https://github.com/user-attachments/assets/d5d30c68-fab8-442a-8e74-461b28e52fc3" />
 
 **可以发现在ResNet50开始，采用的是3层跳跃连接，而不是简单的2层了。主要原因是避免计算量爆炸，所以采用了这个瓶颈结构，通过先降维，再提特征，最后升维来实现**
 
-![alt text](image-2.png)
+<img width="617" height="227" alt="image-2" src="https://github.com/user-attachments/assets/89a98194-8cbc-4b0e-9480-153dd69290f6" />
 
 ### 3.4. 实施
 
@@ -72,22 +72,22 @@
 
 **比较了普通网络不同层数，以及对应的残差网络的效果**
 
-![alt text](image-3.png)
+<img width="1265" height="397" alt="image-3" src="https://github.com/user-attachments/assets/98d09225-89f9-43fc-af96-7b2c31a0a75f" />
 
-![alt text](image-4.png)
+<img width="472" height="126" alt="image-4" src="https://github.com/user-attachments/assets/0dfbef4c-e53b-4b5b-8022-45dd133d50b0" />
 
 ### 4.2. CIFAR-10数据集
 
 **比较了更多不同层数的普通网络和对应的残差网络训练效果**
 
-![alt text](image-5.png)
+<img width="1205" height="305" alt="image-5" src="https://github.com/user-attachments/assets/739f376c-e96d-46ba-a251-5233323c1d70" />
 
-![alt text](image-7.png)
+<img width="665" height="357" alt="image-7" src="https://github.com/user-attachments/assets/90443413-0b53-4b55-97e3-873a64bf21a0" />
 
 ### 4.3. PASCAL和COCO数据集
 
 **除了前面的图像分类，ResNet在图像检测上面也达成了SOTA**
 
-![alt text](image-6.png)
+<img width="555" height="155" alt="image-6" src="https://github.com/user-attachments/assets/43bf656c-378c-423b-9f96-02848788b6ba" />
 
-![alt text](image-8.png)
+<img width="535" height="117" alt="image-8" src="https://github.com/user-attachments/assets/2719bb79-0d74-4105-93a3-478444280e32" />
