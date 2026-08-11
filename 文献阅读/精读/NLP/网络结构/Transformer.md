@@ -30,7 +30,7 @@
 
 **Transformer遵循这一总体设计架构，对编码器和解码器采用堆叠自注意力和逐点全连接层，其具体设计如下，左边为编码器，右边为解码器**
 
-![alt text](image.png)
+<img width="588" height="835" alt="image" src="https://github.com/user-attachments/assets/3104c70d-b94d-4af1-a0e4-c94383af81c9" />
 
 ### 3.1. 编码器与解码器堆叠
 
