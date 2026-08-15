@@ -1,4 +1,4 @@
-# Dual-Rate Dynamic Teacher for Source-Free Domain Adaptive Object Detection https://ieeexplore.ieee.org/abstract/document/11446229
+<img width="541" height="569" alt="image-10" src="https://github.com/user-attachments/assets/5c43837c-d9df-4147-a05a-37f8fd265691" /># Dual-Rate Dynamic Teacher for Source-Free Domain Adaptive Object Detection https://ieeexplore.ieee.org/abstract/document/11446229
 
 ## 摘要
 
@@ -57,3 +57,83 @@
 <img width="501" height="68" alt="image-2" src="https://github.com/user-attachments/assets/a089d21c-fe42-4530-b350-8bd7c0ea207a" />
 
 **其中$\alpha$是平滑系数，平滑系数越大的话，教师越依赖历史经验，越稳定，但是适应能力下降；平滑系数越小的话，教师越依赖学生的新经验，适应能力越强，但是稳定性降低**
+
+### 3.2. 双率动态教师
+
+**双率动态教师结构如下图所示，其中DDT将教师参数分成了“快速响应组”和“稳定保留组”，前者分配一个较低的平滑系数来提高适应性，后者分配一个较高的平滑系数来提高稳定性**
+
+<img width="1124" height="547" alt="image-3" src="https://github.com/user-attachments/assets/f6c01222-121d-4e07-9ac2-a00abeaf64ad" />
+
+#### 3.2.1. 知识整合
+
+**为了增强对区域知识的获取，伪标签的生成同时由教师模型和学生模型共同通过弱图像得到。教师模型主要是通过逐步更新来获取稳定知识，而学生模型则是通过快速适应来获取目标域知识。这种知识整合恰好弥补了这两种不同学习策略造成的差异。通过合并老师的长期知识保留能力以及学生的短期适应模式，这个方法降低了个体模型的偏差，增强了整体的表现效果，并最终弥补了泛化和特定领域适应间的差距。即保留了原来通用知识的泛化性同时，又学习到了新知识，适应了特定的领域**
+
+**介于学生和教师模型都识别了大量相同的物体，所以说对于单个物体，可能会有多个检测框。为了解决这个问题，还是用比较经典的方法非极大抑制（NMS）来解决这个问题。将学生通过弱图像生成的$PL_s$伪标签和教师通过弱图像生成的$PL_t$伪标签进行整合，并进行NMS就得到我们所需的$PL$伪标签，公式如下：**
+
+<img width="522" height="49" alt="image-4" src="https://github.com/user-attachments/assets/2504be59-6f96-4ee8-964b-935765d55496" />
+
+#### 3.2.2. 异步指数平滑
+
+**AEMA平滑实现了教师参数的异步平滑更新，它包括两个重要部分：1.梯度感知参数重要性排序；2.分组更新。对于参数的重要性排名来说，需要定义一个可测量的代理来量化适应域中的参数重要性。这是通过分析梯度下降算法来实现的，其中梯度的大小正好描述了参数内在影响检测损失下降的贡献度。它的优化目标为最小化老师预测标签和整合伪标签的检测损失，因此重要性指标可以从反向传播梯度中得到。表现出明显梯度变化的参数对于目标域来说作用很显著，需要优先进行更新，以促进对目标域中知识的获取；类似的对于梯度变化不明显的参数来说，它们对于稳定性和历史参数的一致性有着重要作用。其中，重要性可以被描述为以下式子：其实就是检测损失的梯度大小，这里取模了，只有数值**
+
+<img width="512" height="80" alt="image-5" src="https://github.com/user-attachments/assets/a3225894-c8d4-44ec-b3b5-fda77f41c111" />
+
+**最终得到两个分组，即“快速响应组”和“稳定保留组”。令前者为$P_{TR}$参数组，后者为$P_{SP}$参数组，其中参数更新的公式如下：$\alpha_1$和$\alpha_2$对应不同组的平滑系数，其中$\alpha_1 < \alpha_2$**
+
+<img width="640" height="86" alt="image-6" src="https://github.com/user-attachments/assets/a5002b01-bf1e-42cb-9255-0a21dc458a94" />
+
+#### 3.2.3. 训练目标
+
+**延续先前的DRU工作，使用遮罩图像来促进训练时对于无标签数据的上下文关系学习。令强增强图像为$x^S$，遮罩图像为$x^M$，并且$x^M = \mathcal{M} \odot x^S$，其中$\mathcal{M}$是只包含0和1的位掩码，$\odot$表示像素乘法，这样就可以得到遮罩图片了。最后，整个训练目标要优化的损失函数式子如下：也就是把强增强图像和遮罩图像的损失放一块进行优化**
+
+<img width="597" height="59" alt="image-7" src="https://github.com/user-attachments/assets/66bf89f7-4d80-4dd1-8e1c-6378eb104d86" />
+
+## 4. 实验
+
+### 4.1. 实验配置
+
+**DDT 在四个公开数据集上验证：Cityscapes（真实城市街景，8类别）、FoggyCityscapes（在 Cityscapes 上叠加雾效生成）、BDD100K（涵盖6种不同驾驶条件的10万张真实图像，按前人工作取其“daytime”子集，含36,728张训练图和5,258张验证图）以及 Sim10K（基于 GTA-V 引擎生成的仿真数据）**
+
+**在此基础上，DDT 在三个广泛采用的域自适应任务上评估：1.Normal to Foggy（Cityscapes → FoggyCityscapes，源域为晴天街景，目标域为雾浓度最高的雾天街景）；2.Cross Scene（Cityscapes → BDD100K，跨场景迁移）；3.Synthetic to Real（Sim10K → Cityscapes，仿真到真实迁移）**
+
+### 4.2. 实现细节
+
+**教师模型采用 AEMA 更新，其中平滑系数在大部分任务中设为 $\alpha_1 = 0.997$、$\alpha_2 = 0.9996$（在 Cityscapes→BDD100K 任务中调整为 $\alpha_1 = 0.9997$、$\alpha_2 = 0.9999$），并选取前 $10\%$ 的参数作为目标响应参数。伪标签阈值为学生 $0.5$、教师 $0.4$。学生模型使用 Adam 优化器，学习率为 $2 \times 10^{-4}$。此外，参照 DRU 引入 MIC 模块，其中补丁大小 $b = 64$，遮罩比例 $r = 0.5$。评估指标采用 IoU 阈值为 $0.5$ 的 mAP**
+
+### 4.3. 与SOTA方法进行比较
+
+**DDT 在三个 SF-DAOD 任务上进行了验证：1.Normal to Foggy（Cityscapes→FoggyCityscapes），DDT 在“train”“motor”等困难类别上相比同框架的 DRU 有明显提升，生成更多高质量伪标签并达到 SOTA；2.Cross Scene（Cityscapes→BDD100K），DDT 在全部类别上均取得最佳性能，超越此前 SOTA 约 3% mAP；3.Synthetic to Real（Sim10K→Cityscapes），DDT 同样表现优异，相较于基于 Deformable DETR 的 DAOD 方法至少提升 2% mAP，验证了其在仿真到真实场景迁移中的有效性。结果如下：**
+
+<img width="1162" height="663" alt="image-8" src="https://github.com/user-attachments/assets/81a39297-9031-4ba1-8bc0-0d2c50b1ac55" />
+
+<img width="1104" height="522" alt="image-9" src="https://github.com/user-attachments/assets/9ee4929c-b370-463e-b319-e5d13745b128" />
+
+<img width="541" height="569" alt="image-10" src="https://github.com/user-attachments/assets/ec0c8b8a-0f38-44b6-85f2-2c61ea33d4b6" />
+
+### 4.4. 消融实验
+
+**消融实验验证了各核心模块的有效性。在 Cityscapes→FoggyCityscapes 任务上，基线 Mean Teacher 的 mAP 为 37.4%；单独加入伪标签融合（Knowledge Integration）后提升至 41.3%，单独引入 AEMA 则提升至 44.6%，两者结合达到 45.5%，其中 AEMA 贡献最大（+5.7%）。在分组策略上，基于教师梯度分组（45.5%）略优于基于学生梯度（45.3%）；目标响应参数的比例以 10% 为最优（45.5%），过高或过低均会降低性能。伪标签阈值方面，学生阈值 0.5、教师阈值 0.4 的组合效果最佳（45.5%）。此外，AEMA 在分类任务（TransDA 83.0→84.2）和有源域参与的 DAOD 任务（MRT 51.2→51.6）上均取得稳定提升，验证了其良好的通用性。结果如下：**
+
+<img width="513" height="272" alt="image-11" src="https://github.com/user-attachments/assets/8265d744-6b1a-4b97-9446-05621565b929" />
+
+<img width="309" height="108" alt="image-12" src="https://github.com/user-attachments/assets/6c2a19d8-b97a-4da1-b65a-4e66e432346d" />
+
+<img width="335" height="103" alt="image-13" src="https://github.com/user-attachments/assets/4e6439b8-6cb5-44a7-8008-053a93493bb7" />
+
+<img width="333" height="188" alt="image-14" src="https://github.com/user-attachments/assets/7eec8c14-e150-4070-b637-76cb60bdf054" />
+
+<img width="219" height="179" alt="image-15" src="https://github.com/user-attachments/assets/23341e49-8762-4667-8eae-3ddc7603174e" />
+
+<img width="298" height="136" alt="image-16" src="https://github.com/user-attachments/assets/65a2027c-13aa-48ed-be98-0042607720e5" />
+
+<img width="283" height="133" alt="image-17" src="https://github.com/user-attachments/assets/308901b5-16a5-4e33-994d-7b012d0866fd" />
+
+<img width="915" height="282" alt="image-18" src="https://github.com/user-attachments/assets/6e83c49d-4ac8-47e5-98da-d8edc73cb2f2" />
+
+<img width="438" height="267" alt="image-19" src="https://github.com/user-attachments/assets/a9edf2a0-6e3f-40c1-bddb-b57c75d20d6f" />
+
+<img width="1369" height="556" alt="image-20" src="https://github.com/user-attachments/assets/8eec0794-77c7-4e1a-8822-b244ebfb9d33" />
+
+## 5. 结论
+
+**本文针对源域自适应目标检测（SF-DAOD）中 Mean Teacher 框架下传统 EMA 更新存在的“稳定性-适应性”冲突问题，提出了双率动态教师（DDT）框架，并设计了一种异步 EMA（AEMA）更新策略。AEMA 通过梯度幅值衡量参数重要性，将教师参数动态划分为目标响应参数和稳定性保留参数，分别赋予不同平滑系数，从而实现快速适应目标域与保持历史知识的平衡。同时，DDT 融合教师和学生对弱图像的伪标签，以获取更全面的域知识用于学生优化。在 Cityscapes→FoggyCityscapes、Cityscapes→BDD100K 和 Sim10K→Cityscapes 三项迁移任务上的实验结果表明，DDT 均达到了新的 SOTA 性能。广泛的消融实验验证了 AEMA 和伪标签融合策略的有效性，且 AEMA 在分类任务及有源域参与的 DAOD 任务上也展现出良好的通用性**
