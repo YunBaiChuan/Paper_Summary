@@ -1,4 +1,4 @@
-<img width="541" height="569" alt="image-10" src="https://github.com/user-attachments/assets/5c43837c-d9df-4147-a05a-37f8fd265691" /># Dual-Rate Dynamic Teacher for Source-Free Domain Adaptive Object Detection https://ieeexplore.ieee.org/abstract/document/11446229
+# Dual-Rate Dynamic Teacher for Source-Free Domain Adaptive Object Detection https://ieeexplore.ieee.org/abstract/document/11446229
 
 ## 摘要
 
