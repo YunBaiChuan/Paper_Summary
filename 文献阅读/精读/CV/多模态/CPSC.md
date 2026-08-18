@@ -121,3 +121,49 @@
 **简单说一下这个公式，他主要是对于每一批数据中所有样本的第m个模态进行处理，先算出其对应的原始梯度，然后再算其校准梯度，接着在整体加权平均，得到当前批次中所有样本的第m个模态的校准梯度**
 
 **对于凸损失函数$\mathcal{L}$来说，当$\omega(\rho)$和$\|\nabla \mathcal{L}\|_2$成正相关的时候，具有线性加权的GSC模块，能够降低随机梯度估计的有效方差。因此，我们的重加权机制能够有效减少低$\rho^m$分数的不可靠样本影响，同时增强那些高可靠样本的贡献，有效引导模型做出更自信、更准确的预测**
+
+### 3.5. 符合预测器更新
+
+**在模型经过一轮参数更新后，变成了$\theta_{t + 1}$，我们需要通过刷新CP模型来保持不确定性量化的准确性。具体来说就是重新用当前的模型参数$\theta_{t + 1}$重新计算校准集的不及格分数，式子如下：**
+
+<img width="604" height="65" alt="image-17" src="https://github.com/user-attachments/assets/68ef4aa2-4a27-4f63-bfab-167a6a534757" />
+
+**其实就是和前面一样的，然后分位数也更新一下，式子如下：**
+
+<img width="651" height="64" alt="image-18" src="https://github.com/user-attachments/assets/a9208045-daec-4204-9293-264827362665" />
+
+**更新完符合预测器之后，整个训练循环开始下一轮迭代。在测试阶段，我们没有使用RSC模块，这样每个单模态编码器的特征在预测过程中不会被分解。这样做的原因在于训练阶段时，编码器对于特征提取这块已经训练的差不多了，测试阶段再用RSC模块，反而会增加预测时间和部署代价。同时GSC模块也没有使用，因为不需要再方向梯度更新。总之，我们的CPSC框架仅在训练阶段进行，从而为多模态学习提供了一个与模型无关的框架。模型无关的意思是骨架网络可以任选，比如ResNet，ViT等等**
+
+## 4. 实验
+
+### 4.1. 实验配置
+
+**论文在6个涵盖4种模态（RGB、深度、音频、文本）的多模态数据集上评估CPSC，其中CREMA-D、AVE、Kinetics-Sounds用于测试模态不均衡场景（报告多模态及单模态准确率），SUN RGB-D、NYU Depth V2、MVSA-Single用于测试噪声鲁棒性场景（在干净及不同强度高斯/椒盐噪声下报告多模态准确率）；实现上，音频-视觉任务采用声谱图输入，RGB-深度任务使用ResNet18提取特征，图像-文本任务使用ResNet152和预训练BERT，RSC模块的平衡因子设为λ₁=0.8、λ₂=0.2**
+
+### 4.2. 模型比较
+
+**在模态不均衡场景下，CPSC在三个音视频数据集（Kinetics-Sounds、CREMA-D、AVE）上均显著优于ReconBoost、MMPareto、LFM、InfoReg、DGL、ARL和IPRM等近期方法，尤其在AVE上多模态准确率比ARL提升约5%；在噪声鲁棒性场景下，CPSC在MVSA-Single和SUN RGB-D上无论干净数据还是高斯/椒盐噪声下均超越EAU、ECML、NLC等基线，且随着噪声增强其性能下降幅度最小，表明RSC模块通过抑制污染特征分量、GSC模块通过降低不可靠样本的优化权重，共同赋予模型更强的抗噪能力**
+
+<img width="1524" height="365" alt="image-19" src="https://github.com/user-attachments/assets/8dcc4649-49e1-4f1e-81a0-a8303b86952e" />
+
+<img width="656" height="772" alt="image-20" src="https://github.com/user-attachments/assets/32f56fc9-17fd-491a-aec3-225652b59623" />
+
+### 4.3. 进一步分析
+
+**消融实验表明，RSC和GSC两个模块各自都有提升，RSC对噪声场景贡献更大（因为直接过滤噪声特征分量），而GSC对模态不均衡场景更关键（通过梯度调制平衡各模态学习）；RSC模块内部，一致性约束和多样性约束缺一不可，前者保证分量不离谱、后者保证分量不重复，二者共同作用效果最佳；GSC模块与SGD、Adam、AdaGrad等不同优化器搭配均有效，说明其优化器无关的通用性；符合预测器若更新间隔过长或跳过预热阶段，性能都会明显下降，说明CP必须随模型协同演化且从可靠基础开始校准；特征可视化（t-SNE）显示，CPSC学到的音频和视觉特征类内更紧凑、类间更清晰，明显优于基线方法；可靠性分数分布也证实，CPSC训练后的模型对预测的置信度更合理，有效缓解了盲目自信的问题**
+
+<img width="573" height="412" alt="image-21" src="https://github.com/user-attachments/assets/2fc90782-a16a-4632-8603-00787143c631" />
+
+<img width="582" height="258" alt="image-22" src="https://github.com/user-attachments/assets/1ce93643-3b59-413c-803d-5ff78bfa916a" />
+
+<img width="575" height="365" alt="image-23" src="https://github.com/user-attachments/assets/46e98ba0-b22e-4861-a1a4-d7fb2ea9382f" />
+
+<img width="582" height="225" alt="image-24" src="https://github.com/user-attachments/assets/36984a7b-c49a-4765-a477-8de2f3d435a1" />
+
+<img width="570" height="553" alt="image-25" src="https://github.com/user-attachments/assets/0c21ba01-e88a-4c81-be2c-55dd04961dba" />
+
+<img width="568" height="365" alt="image-26" src="https://github.com/user-attachments/assets/5cc37c6d-3c89-41be-9895-f071dc812166" />
+
+## 5. 结论
+
+**本文提出了符合预测自校准框架（CPSC），用于解决多模态学习中由模态不均衡和数据噪声导致的低质量问题，该框架通过表示自校准（RSC）在特征层面筛选可靠分量，通过梯度自校准（GSC）在优化层面调制梯度，两者协同工作有效提升模型在低质量数据上的性能；大量实验验证了其优越性。未来工作将探索将该框架扩展到其他更具挑战性的多模态场景**
