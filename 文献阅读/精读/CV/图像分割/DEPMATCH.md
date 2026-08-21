@@ -10,7 +10,7 @@
 
 **深度学习的最新发展显著提高了密集预测任务的性能，比如语义分割。但这些模型的有效性很大程度上依赖于高质量标记数据的可用性，而这通常需要花费大量的人力和物力进行获取。因此，利用有限的标记数据和大量的未标记数据相结合进行训练的半监督语义分割（SSS），引起了相当大的关注**
 
-![alt text](image.png)
+<img width="692" height="519" alt="image" src="https://github.com/user-attachments/assets/52cc64a2-c0e0-4a46-88c2-917ad5aeec9c" />
 
 **SSS的主流研究方向主要集中在伪标签和一致性正则化上面，其中伪标签方法旨在设计多样化的训练策略来提高伪标签的质量，而一致性正则化方法主要是为数据、特征或者网络添加扰动，以提高不同增强间的像素一致性。这里的像素一致性指的是，对于一个像素来说，不管进行怎样的图像增强，模型对它的预测结果应该保持一致。尽管这些方法取得了成功，但它们都没能探索到有价值的视觉先验。在过去几年中，强大的视觉基础模型比如CLIP和Depth Anything越来越多的被用来为分割提供先验知识。并且这种情况已成为最近研究的关键趋势，并且推动了一系列的显著进步。深度信息在本质上给模型提供了空间上下文结构指导，这一特性对于分割任务来说非常有用。然而现有的SSS方法缺乏对通过一个专门的机制来有效利用深度信息的关注，这正是本文所要解决的**
 
@@ -44,11 +44,11 @@
 
 **SSS本质是利用从限制标签数据$\{(x_i^l, y_i^l)\}_{i = 1}^N$获得的知识，来从大量未标记数据$\{(x_i^u)\}_{i = 1}^M$中提取全面的分割知识，这正是本文所研究的重点。我们的DEPMATCH是在一致性正则化学习框架下提出的，主要是探索利用未标记数据的深度差异信息来提高预测的一致性。其中，模型在标记数据集$x^l$上的训练过程由标记监督损失$\mathcal{L}_{sup}$指导，具体式子如下：**
 
-![alt text](image-1.png)
+<img width="522" height="54" alt="image-1" src="https://github.com/user-attachments/assets/384f164e-79b4-4620-8bde-0849de56aeb2" />
 
 **简单说一下这个式子，他首先就是对标记数据做一个弱增强$\mathcal{A}_w$，如果不增强容易过拟合，强增强不容易学到特征；接着经过编码器$\mathcal{K}$和解码器$\mathcal{S}$得到预测结果，此时再和$y^l$算一个交叉熵损失函数$l_{ce}$就行了。同样的，无标签数据$x^u$被同时送进了网络中。为了增强模型的泛化能力，无标签数据经历了强增强和弱增强，即$\mathcal{A}_s$和$\mathcal{A}_w$，然后得到了相应的强增强视图和弱增强视图，即$x^s$和$x^w$。接着将$x^s$和$x^w$输入模型中，得到对应的预测概率$p^s$和$p^w$。与现有方法一致，我们通过选择预测置信度超过指定阈值$\tau$的像素来减轻由错误预测引入的偏差，我们将这个阈值$\tau$设置为0.95，用于一致性训练，式子如下：**
 
-![alt text](image-2.png)
+<img width="570" height="58" alt="image-2" src="https://github.com/user-attachments/assets/17d35046-717d-458d-8329-4b123d2a2d00" />
 
 **这个式子表示高置信度一致性学习损失，首先$l()$函数会筛选出置信度高于阈值的像素，也就是用二进制掩码进行筛选，如果$max(p^w) >= \tau$那么就置为1，否则置为0；接着右边是$p^s$和$p^w$的交叉熵损失函数，目的是让强增强预测尽可能接近弱增强预测；左右两项都会得到一个图/矩阵，我们再用$\odot$将它们对应像素进行乘积，就得到损失了**
 
@@ -62,31 +62,31 @@
 
 **之后利用预测结果$p^w$，我们过滤出与类别$c$有关的区域$R^c$，式子如下：**
 
-![alt text](image-3.png)
+<img width="503" height="52" alt="image-3" src="https://github.com/user-attachments/assets/9ca40d08-9737-4387-a0fe-168883a07164" />
 
 **接着我们可以对类别c进行深度提取得到深度序列$\{d_i^c\}_{i = 1}^{N_c}$，以及特征提取得到特征序列$\{f_i^c\}_{i = 1}^{N_c}$，其中$N_c$表示类别c的像素数量。对于任意两个类别$c_1$和$c_2$来说，我们构建类间深度-特征差异集合$\mathcal{Z}^{<c_1, c_2>}$，式子如下：其中$\mathcal{N}()$表示衡量两个特征之间的差异性**
 
-![alt text](image-5.png)
+<img width="576" height="54" alt="image-5" src="https://github.com/user-attachments/assets/42cb2357-db88-4d84-ac0e-7117f4abb98b" />
 
 **为了避免类间像素深度差异相似性对模型训练产生不好的影响，我们选择深度差异超过我们设定阈值$\omega$的像素对，并导出其对应的遮罩码如下：**
 
-![alt text](image-6.png)
+<img width="534" height="51" alt="image-6" src="https://github.com/user-attachments/assets/2483412e-2524-4159-b4fa-1e113828539d" />
 
 **最后，类间深度变化感知损失$\mathcal{L}_{cdp_1}$被如下式子进行计算：其中$\mathcal{Y}()$表示一个损失函数，旨在将深度差异知识映射到特征空间。**
 
-![alt text](image-7.png)
+<img width="569" height="93" alt="image-7" src="https://github.com/user-attachments/assets/4b669101-61a1-42ab-b3f6-e841d063ad48" />
 
 **对于类内深度差异感知来说，我们要减少类别c当中显著的差异变化，以缓解模型训练时导致的巨大误差。因此，我们对深度图$D^w$中的深度差值应用了指数归一化，并且生成了类内深度-特征差异集合$\mathcal{Z}^c$如下：其实和式（4）差不多，就是变成了类间，然后用了指数归一化**
 
-![alt text](image-8.png)
+<img width="562" height="87" alt="image-8" src="https://github.com/user-attachments/assets/86050726-a7ef-4730-bf45-31e37435badf" />
 
 **这里面的$\mathcal{N}()$含义和式（4）一致，并且通过消融实验我们可以发现，利用L2范数进行差异量化的效果很不错，也就是$\|f_1 - f_2\|_2$。然后差异集合$Z^c$当中，具有高熵差的像素对，往往表现出了显著的特征差异，在训练过程中需要得到更多关注。因此，我们主张利用熵差作为自适应权重，鼓励模型对于高熵差像素对的特征学习。因此，我们基于弱增强视图的预测概率$p^w$，对每个像素进行信息熵$\mathcal{H}^w$的计算。然后每个类的类内差异感知损失$\mathcal{L}_{cdp_2}$计算方式如下：**
 
-![alt text](image-9.png)
+<img width="523" height="89" alt="image-9" src="https://github.com/user-attachments/assets/4cc01d61-a1b8-4b55-bdcf-abe8dab3be3a" />
 
 **简单说一下这个式子，里面的$\Delta \mathcal{H}^w = |\mathcal{H}^w_i - \mathcal{H}^w_j|$表示熵差，也就是相应像素对之间的信息熵差值。然后$\mathcal{Y}()$的含义和式（6）一致，都表示损失函数，旨在将深度差异知识映射到特征空间。并且经消融实验验证，用均方损失误差（MSE）作为损失函数时，效果很好。因此，像素对拥有较小的熵差，则赋予其较小的权重；同理较大熵差的像素对，赋予其较大的权重，使得熵差较大的像素对，对于损失的贡献更大。最终，类别深度差异感知的总体损失如下：其实就是类间深度差异感知损失和类内深度差异感知损失的和**
 
-![alt text](image-10.png)
+<img width="487" height="52" alt="image-10" src="https://github.com/user-attachments/assets/7def8ad4-90d7-4450-846d-741ed44f5db9" />
 
 ## 3.3. 不确定Logit差异调节
 
@@ -94,22 +94,22 @@
 
 **对于类间Logit差异来说，不确定区域二值映射$\mathcal{B}$是从$p^w$中选择一些像素来生成的，其中像素的类最大预测概率低于阈值$\tau = 0.95$。从类别c的不确定区域中，我们可以得到Logit信息$\mathcal{P}^c = \{p_1^c, p_2^c, ..., p_m^c\}$以及深度信息$\mathcal{T}^c = \{t_1^c, t_2^c, ..., t_m^c\}$，其中m指像素配对个数，它们首先要通过同一个遮罩$\mathcal{R}^c \odot \mathcal{B}$，式子如下：**
 
-![alt text](image-11.png)
+<img width="611" height="55" alt="image-11" src="https://github.com/user-attachments/assets/80a18c4f-c499-4164-af65-59f0e287110b" />
 
 **可以发现两个信息都是在遮罩$\mathcal{R}^c \odot \mathcal{B}$的基础上额外进行的，这个遮罩结果其实就是不确定区域。对于前者来说就再\*一个$\Psi(p^s)$，也就是强增强图的概率分布图，外面又套了一个Softmax；对于后者来说就再\*一个$\mathcal{D}^w$，也就是弱增强图的深度图。因此，对于任意两个类$c_1$和$c_2$来说，我们计算索引相同的像素对，他们的深度差异序列$\mathcal{X}^{<c_1, c_2>}$和Logit差异序列$\mathcal{V}^{<c_1, c_2>}$，式子如下：**
 
-![alt text](image-12.png)
+<img width="545" height="97" alt="image-12" src="https://github.com/user-attachments/assets/e84d5861-114c-46b1-a889-b427feb1025a" />
 
 **主要说一下这里的$\mathcal{V}^{<c_1, c_2>}$计算方式，他首先是先算两个像素的概率向量点积，然后得到一个数值结果，比较相似的话乘积相加之后的结果会很大/小，所以说在外面套了一个Sigmoid来把值域压缩到$(0, 1)$之间。进一步，我们可以得到类间Logit差异的损失$\mathcal{L}_{ur_1}$如下：**
 
-![alt text](image-13.png)
+<img width="552" height="96" alt="image-13" src="https://github.com/user-attachments/assets/86b805a8-2fdd-4dbf-92fa-413d638b8f7d" />
 
 **简单说一下这个损失函数，他其实就是对于两个等长为m的向量/序列做一个点积计算，并且累加求和。具体来说就是，类别$c_1$和类别$c_2$的$\mathcal{X}^{<c_1, c_2>}$深度差异序列，里面值比较大的元素就表示差异明显，与Logit差异序列$\mathcal{V}^{<c_1, c_2>}$中对应元素进行点积时，如果此时元素比较大，说明模型判定比较相似。但深度差异明显时，应该是不相似才对，因此这个会算进损失当中，作为后续的优化方向**
 
 **对于类内Logit一致性来说，通过类别c的不确定性区域，我们构建出了类内深度与Logit差异序列，分别表示为$\mathcal{Q}^c$和$\mathcal{Y}^c$，具体来说就是用式（11）算。并且要求类内像素对的深度差异，必须小于差异容忍参数$\xi$，即$|t_i^c - t_j^c| <= \xi$，用来量化相邻像素。因此，类内Logit一致性损失$\mathcal{L}_{ur_2}$如下：**
 
-![alt text](image-14.png)
+<img width="528" height="89" alt="image-14" src="https://github.com/user-attachments/assets/432081fb-41a9-46db-9017-db36e1a2b4a8" />
 
 **这个损失函数思路和式（12）差不多，这里改成了每个类自己的损失之和。最终，不确定Logit差异调节损失就是这两部分损失的和**
 
-![alt text](image-15.png)
+<img width="491" height="68" alt="image-15" src="https://github.com/user-attachments/assets/d19f7200-507d-45e5-be1d-4463b3ddb435" />
