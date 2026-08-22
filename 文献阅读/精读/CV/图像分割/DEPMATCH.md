@@ -40,7 +40,7 @@
 
 **本节提供了DEPMATCH方法的详细描述，主要分为以下5个部分：1.预备知识；2.类别深度差异感知模块，它主要是利用深度差异信息来指导特征空间的训练；3.不确定Logit差异模块，它主要是增强了不确定区域像素之间的Logit信息调节；4.总体训练目标；5.方法的局限性及缓解方法**
 
-## 3.1. 预备知识
+### 3.1. 预备知识
 
 **SSS本质是利用从限制标签数据$\{(x_i^l, y_i^l)\}_{i = 1}^N$获得的知识，来从大量未标记数据$\{(x_i^u)\}_{i = 1}^M$中提取全面的分割知识，这正是本文所研究的重点。我们的DEPMATCH是在一致性正则化学习框架下提出的，主要是探索利用未标记数据的深度差异信息来提高预测的一致性。其中，模型在标记数据集$x^l$上的训练过程由标记监督损失$\mathcal{L}_{sup}$指导，具体式子如下：**
 
@@ -54,7 +54,7 @@
 
 **上面两个式子被广泛应用在了先前的研究中，主要是用来监督模型的训练。不过这些研究都忽略了利用未标记数据的深度差异信息来协助模型进行高效的图像分割。此外，他们还忽略了置信度低于$\tau$阈值的不确定像素。接下来，我们将详细介绍类别深度差异感知模块以及不确定Logit差异调节模块，他们分别利用了深度差异信息来指导特征学习，以及调节不确定区域的Logit信息**
 
-## 3.2. 类别深度差异感知
+### 3.2. 类别深度差异感知
 
 **通常来说，类间的深度差异要比类内的深度差异更加明显，因此就可以利用这种深度差异信息来指导稳定的特征学习。为了有效利用这些深度差异信息，我们必须要解决以下两方面的问题：1.类间深度相似性；2.类内深度差异性。于是我们设计了类别深度差异感知（CDDP）模块，通过对类间和类内变化的感知，来依次解决这两个问题**
 
@@ -88,7 +88,7 @@
 
 <img width="487" height="52" alt="image-10" src="https://github.com/user-attachments/assets/7def8ad4-90d7-4450-846d-741ed44f5db9" />
 
-## 3.3. 不确定Logit差异调节
+### 3.3. 不确定Logit差异调节
 
 **CDDP模块主要是将深度差异知识蒸馏到特征空间，并且产生了不错的效果，还激发了Logit空间中对这些知识的应用。其中特征空间指的是图像输入编码器之后，进行特征提取时的中间结果，Logit空间则指的是解码器的输出，还没有放到Softmax里面算概率的时候。我们确定了2个见解：1.对于类间边界的不确定区域像素的Logit信息确实，导致了边缘结构信息的缺失；2.相同类在边缘区域的相邻像素，其深度差异可以忽略不计。基于以上2个见解，我们提出了不确定Logit差异调节（ULDR）模块。这个模块利用了深度差异知识，作为启发式过滤标准来选择相应类像素的Logit信息，以通过类间Logit差异和类内Logit一致性来增强模型的空间理解能力**
 
@@ -113,3 +113,95 @@
 **这个损失函数思路和式（12）差不多，这里改成了每个类自己的损失之和。最终，不确定Logit差异调节损失就是这两部分损失的和**
 
 <img width="491" height="68" alt="image-15" src="https://github.com/user-attachments/assets/d19f7200-507d-45e5-be1d-4463b3ddb435" />
+
+### 3.4. 总体训练目标
+
+**不管是自然还是非自然场景，我们提出的DEPMATCH和其他主流的SSS一样，都遵循着一致性正则化框架，具体如下图：**
+
+<img width="1408" height="609" alt="image-16" src="https://github.com/user-attachments/assets/1e81e06b-f216-4212-8f9c-efb33cc273c4" />
+
+**集成所提出的组件只需要从编码器中提取特征，从解码器中提取预测，并且深度图的差异信息被用在调节不确定区域的逻辑空间以及特征空间中。同时，我们提出的这个插件也能被用在其他密集型预测任务中，比如目标检测和全景分割。尽管在这些任务中不会用到强增强图和弱增强图，但CDDP模块仍然可以利用深度图中的空间结构信息来帮助特征空间的学习。对于解码器的预测来说，其中高熵的不确定区域像素是本文重点探讨的，而ULDR模块则可以为这些高熵像素提供Logit空间中的正则化。因此，DEPMATCH框架总的训练误差如下：**
+
+<img width="544" height="55" alt="image-17" src="https://github.com/user-attachments/assets/0966a075-3884-47df-8556-0ecc62b39733" />
+
+**简单说一下这个式子，首先$\mathcal{L}_{sup}$就是最开始提到的标记数据损失，后面三个都是未标记数据的损失。其中$\mathcal{L}_{high}$表示高可信度区域损失，$\mathcal{L}_{cdp}$表示CDDP模块损失，同理$\mathcal{L}_{ur}$表示ULDR模块损失，然后$\alpha$和$\beta$是相应的损失权重。其中的超参数首先经过了初步实验进行设置，后续又经过了大量实验进行微调，以得到较好结果**
+
+**广泛的比较实验和详细的消融实验证明了我们的方法对于噪声深度信息具有高度鲁棒性，这取决于两个方面：1.从类间和类内计算的深度差异信息，通过了两种鲁棒性机制处理：1.阈值选择；2.指数归一化；2.利用深度差异信息对特征空间和Logit空间进行软指导**
+
+### 3.5. 讨论
+
+<img width="640" height="267" alt="image-18" src="https://github.com/user-attachments/assets/6995f3a1-6824-4ee9-9ec1-22f16e71cae8" />
+
+**尽管DEPMATCH提高了图像分割的表现，但从效果图中可以发现，它对于捕获纹理感知区域的局限性，导致了它在形状相似，但是纹理不同的类别间产生了混淆。一般的，浅层网络提供了丰富的上下文信息，比如说纹理或者形状；同时深层网络提供了丰富的类级语义信息。受到这个启发，我们提出了多颗粒度交互（MKI）策略，它会逐渐的，自适应的整合从浅层到深层的上下文信息。这种融合通过细粒度结构以及纹理知识增强了深层语义特征，从而提高了模型区分视觉相似类的能力**
+
+**给定一个视觉编码器，记作$\mathcal{K}()$，我们选择其中的四层特征（从DINOv2-S中选择3、6、9、12层的特征），并且将它们调整到相同的维度，并打上标签为$\mathcal{F}_1$，$\mathcal{F}_2$，$\mathcal{F}_3$和$\mathcal{F}_4$。之后计算前三个和第四个特征的相似矩阵$\{S_i\}_{i = 1}^3$，式子如下：**
+
+<img width="547" height="80" alt="image-19" src="https://github.com/user-attachments/assets/222dced8-39f6-47f0-b04b-99e4fba44383" />
+
+**简单说一下这个式子，$S_i$其实就是一个$3 * H * W$的张量，每一个特征向量是$C * H * W$，经过特征矩阵运算之后，得到的其实是一个相似度矩阵$1 * H * W$，三个拼在一起就是完整的$S_i$了，还有这里算的是余弦相似度。接下来，我们取这些相似度矩阵值得倒数，利用通道方式进行应用Softmax来获得前三个浅层特征的权重矩阵$\{\mathcal{W}_i\}_{i = 1}^3$。这里取倒数是为了突出浅层特征，因为就这个式子而言，深层与浅层信息越相似，那么对应的元素分数越高，说明深层已经学过浅层的这个信息了，因此取倒数之后，分配给这块的权重就会更小；同理对于不相似的位置来说，其分数低，分配的权重更好，以更好学习浅层特征。最终，我们由浅入深的进行多颗粒度知识交互，式子如下：**
+
+<img width="553" height="131" alt="image-20" src="https://github.com/user-attachments/assets/37b2239c-28e4-43d9-9e80-3a1851773578" />
+
+**也是简单说一下这个式子，它首先是将浅层的$\mathcal{F}_1$与$\mathcal{F}_4$进行加权融合，之后再逐步往下递推。最终将得到的$G_3$以及$\mathcal{F}_4$给到解码器以输出更加稳定的预测。从实验可知，我们的多颗粒度交互策略能够有效缓解DEPMATCH的上下文理解限制，也就是对于纹理和形状这块的理解限制**
+
+## 4. 实验
+
+### 4.1. 数据集及评估指标
+
+**在五个标准数据集上评估DepMatch，涵盖自然图像（PASCAL VOC 2012，含原始 21 类与 SBD 扩充版）、城市街景（Cityscapes，19 类）、复杂场景（ADE20K，150 类）、自动驾驶（CamVid，11 类）和医学影像（ACDC，心脏 MRI，4 类），并引入 NYUDepthv2（40 类 RGB-D）专门验证深度鲁棒性。实验采用半监督标准划分比例：PASCAL VOC/Cityscapes/CamVid 为 1/16、1/8、1/4、1/2，ADE20K 为 1/64、1/32、1/16、1/8，ACDC 为 1/20、1/10，评估指标自然图像用 mIoU，医学图像用 Dice 和 95% Hausdorff 距离**
+
+### 4.2. 实现细节
+
+**基于PyTorch框架，在8张A6000（48GB）GPU上完成所有实验，将DepMatch作为插件集成到现有半监督分割框架中，并使用冻结的Depth Anything V2生成深度图。实验覆盖四种视觉编码器：ResNet-101、MiT-B5、DINOv2-S（主编码器）以及轻量级MobileViT V2，不同编码器采用不同的训练配置——ResNet和MiT学习率为 1e-3，DINOv2-S为5e-6；训练轮数从60到240轮不等，图像尺寸根据数据集调整为322×322到798×798之间；U-Net在ACDC医学数据集上采用0.05的学习率和30k次迭代。所有配置均沿用各自基线的标准设置以保证公平对比**
+
+### 4.3. 与SOTA方法进行比较
+
+**在五个数据集上将DepMatch集成到多个主流半监督分割框架中，与现有SOTA方法进行全面对比。在PASCAL VOC 2012（原始版）上，DepMatch为AllSpark、UniMatch和UniMatch V2带来了持续稳定的提升，尤其在标注极少（1/16，仅92张）时增益最显著（最高 +3.32% mIoU）；在扩充版上也保持类似趋势，验证了方法对不同标注质量的鲁棒性。在Cityscapes复杂街景上，UniMatch V2 + DepMatch达到81.03%~83.17% mIoU，显著超越其他方法；在ADE20K大规模场景（150类）上，提升尤为突出（+1.36% mIoU），说明类别越多、深度信息越丰富，DepMatch收益越大。在CamVid小数据集上同样表现优异1/16设置下相比RankMatch提升7.97% mIoU；在ACDC医学图像上，DepMatch集成到ALHVR后，Dice提升1.12%（1/20 设置），95HD下降0.63，证明方法在边界分割和医学场景中同样有效。此外，与DFCS的对比表明，DepMatch专门针对半监督设计的深度差异感知机制，显著优于直接利用深度特征相关性的通用方案。可视化结果进一步显示，DepMatch在类间深度相似和类内深度差异两类困难场景下均能实现更精准的分割，边界更清晰**
+
+<img width="610" height="281" alt="image-36" src="https://github.com/user-attachments/assets/0b077fc4-c610-4465-be69-402ac41a89f6" />
+
+<img width="1246" height="548" alt="image-21" src="https://github.com/user-attachments/assets/12e5d622-d2bb-40d7-b2bc-04a41980060d" />
+
+<img width="1228" height="596" alt="image-22" src="https://github.com/user-attachments/assets/99740e92-970f-4398-b2d5-750c416678bf" />
+
+<img width="1210" height="482" alt="image-23" src="https://github.com/user-attachments/assets/ef489f92-a7ce-435e-abad-6bd47c22e59e" />
+
+<img width="1188" height="357" alt="image-24" src="https://github.com/user-attachments/assets/cf7e7044-c63c-4a6d-8d6b-3b6d0cdf2ce0" />
+
+<img width="1155" height="313" alt="image-25" src="https://github.com/user-attachments/assets/38b77fa7-4e38-4aab-9c8a-1955563f3c64" />
+
+<img width="605" height="338" alt="image-26" src="https://github.com/user-attachments/assets/a25d5977-b4cd-4c01-92a2-9bebef20841d" />
+
+### 4.4. 消融实验
+
+**消融实验在PASCAL VOC 2012上以UniMatch V2为基线，系统验证了DepMatch各设计的有效性。1.组件贡献：CDDP和ULDR模块分别带来0.67%和0.55%的mIoU提升，两者联合使用达到最佳性能（86.84%），且在稀有类别（如Tv/Monitor，仅占0.72%像素）上提升高达3.36%，证明方法对长尾类别同样有效；2.深度鲁棒性：使用不同精度的深度模型（DepthFM 85.80% → Depth Anything V2 95.30%）时，分割性能波动仅0.24%；在NYUDepthv2真实深度上，噪声注入75%后性能增益仅下降0.22%，证明方法不依赖深度图精度；3.设计选择：MSE优于欧氏距离和KL散度作为特征差异度量；L2-Norm优于余弦相似度；指数归一化和熵差异加权分别带来0.46%和0.42%的增益；用深度差作为启发式过滤条件（HF-to-Logit）优于直接映射到Logit空间（DM-to-Logit）1.45%；4.复杂度：DepMatch不引入额外参数，训练时间增加19%~47%，显存增加 26%~33%，但换来 1.96%~3.32% 的性能提升，开销可接受；5.轻量级验证：在MobileViT V2（仅 9.7M 参数）上，DepMatch仍带来 1.16% 提升，且显著降低性能方差，适合资源受限场景；6.伪标签噪声：DepMatch有效抑制伪标签噪声，在噪声平台期仍持续提升性能，展现强鲁棒性；7.深度vs类别一致性：深度差异学习范式（86.84%）优于传统类别原型一致性（86.18%），证明空间结构信息比类别原型更具判别力**
+
+<img width="556" height="231" alt="image-37" src="https://github.com/user-attachments/assets/3aa54d9d-9001-4533-8c22-2e59940d3954" />
+
+<img width="599" height="196" alt="image-38" src="https://github.com/user-attachments/assets/601bd5e8-a0f6-4222-bdf9-76217e0930de" />
+
+<img width="622" height="188" alt="image-27" src="https://github.com/user-attachments/assets/0dfa9e23-69c5-4065-b7b8-e2a37b676dbf" />
+
+<img width="578" height="271" alt="image-28" src="https://github.com/user-attachments/assets/77bc9a46-418d-4634-b699-8c2dc4081317" />
+
+<img width="615" height="144" alt="image-29" src="https://github.com/user-attachments/assets/5b13446d-11d4-40b6-855b-a4a7c2999c0c" />
+
+<img width="584" height="149" alt="image-30" src="https://github.com/user-attachments/assets/aeaf84e2-5328-4622-9ee4-793c2a0212b2" />
+
+<img width="474" height="159" alt="image-31" src="https://github.com/user-attachments/assets/cd546f08-d71a-47e6-a6b9-d174ebf5dc3c" />
+
+<img width="615" height="143" alt="image-32" src="https://github.com/user-attachments/assets/e95e58e9-bb9c-4409-ada0-7c9c060f5b00" />
+
+<img width="1158" height="393" alt="image-33" src="https://github.com/user-attachments/assets/835a264e-f8d4-43a0-9cd6-30e3a0d19f94" />
+
+<img width="587" height="160" alt="image-34" src="https://github.com/user-attachments/assets/50b34f89-676c-4d15-b4a4-650fef2b6d63" />
+
+<img width="490" height="151" alt="image-35" src="https://github.com/user-attachments/assets/ca550436-b154-49c5-a5af-133d9738940d" />
+
+## 5.限制和未来工作
+
+**DepMatch在多个数据集上表现优异，但可视化结果显示它仍会在形状相似但纹理不同的类别上产生误判（例如将纹理不同的物体错分为同一类）。为缓解这一问题，我们提出了MKI（多粒度知识交互）策略——通过递进式融合浅层纹理特征与深层语义特征来增强模型对纹理的感知能力，实验结果验证了该策略能有效改善上述误判。在后续工作中，计划不依赖浅层特征，而是设计一个轻量级的纹理建模模块直接从RGB图像中提取纹理信息，避免特征编码带来的细节损失；同时，针对深度变化有限的特殊场景（如遥感、超声、电镜图像），将设计一个场景感知深度生成器，为每个实例分配合理的深度值，确保类内差异小而类间差异大，从而为分割提供更具判别性的深度线索**
+
+## 6. 结论
+
+**本文提出了DepMatch，一种简单有效的半监督语义分割方法，核心是通过探索未标注数据中像素间的深度差异知识来引导一致性学习。具体设计了CDDP模块在特征空间蒸馏深度差异信息，缓解类间深度相似和类内深度差异两大难题；以及ULDR模块在Logit空间利用深度差异调节不确定区域的像素预测，增强边界分割能力。大量实验表明，DepMatch可作为即插即用插件无缝集成到现有半监督分割框架中，在五个公开数据集和多种视觉编码器上均带来显著的性能提升**
