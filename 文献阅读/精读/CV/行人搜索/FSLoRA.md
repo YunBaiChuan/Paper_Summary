@@ -10,7 +10,7 @@
 
 **一阶段行人搜索方法的一个重大挑战在于两个子任务之间的固有冲突：行人检测强调个体之间的共同点，以将其与背景区域分开；而行人重识别则侧重于特定身份的判别特征以进行精确匹配。这种冲突就提出了一个关键问题，那就是如何平衡这两个对立的目标。一些方法使用损失重加权来动态调整调整训练期间的任务梯度。但它们只是在训练时调了一下两个任务的loss权重，根本没去考虑检测和Re-ID各自需要什么样的特征。但恰恰是这种“任务专属特征”的缺失，导致了冲突无法彻底解决。另一项工作则是研究了特征解耦方法，但它们往往是在最后一层进行嵌入表示，而靠近输入的低层特征，检测和Re-ID的信息依然是混在一起的，如下图：**
 
-![alt text](image.png)
+<img width="653" height="262" alt="image" src="https://github.com/user-attachments/assets/25be83a9-53d8-4448-8dc1-64116f36ef92" />
 
 **任务冲突源自早期的特征纠缠，因此仅在最终的嵌入空间或者损失函数中解决这个问题具有局限性。这促使我们在整个骨干网络中实现完整的特征解耦，这是单阶段行人搜索的一个关键，但尚未充分研究的问题。为了解决这个问题，我们将适配器插入到骨干网络中，逐渐分离特定特征并且保留共同特征。并且我们的方法没有使用复杂的分支架构，而是使用较为简单的低秩自适应（LoRA）来实现高效的特征分离，从而在行人检测和行人重识别之间建立更好的平衡。除了空间方面分离特征以外，我们认为特征的频率也是区分检测和Re-ID这两个不同任务的关键信息。具体来说，检测任务主要是依赖于全局结构，而Re-ID任务则更加关注细粒度的纹理细节，这种聚焦的特征差异可以在频域得到有效建模。因此，我们可以通过每个任务的要求来定制频域特征分离，我们可以放大相关信号，并且抑制冲突信号，从而更加有效地优化两个子任务**
 
@@ -30,11 +30,11 @@
 
 ### 3.1. 预备知识
 
-![alt text](image-1.png)
+<img width="1201" height="453" alt="image-1" src="https://github.com/user-attachments/assets/71c0c334-56cf-4151-a74b-34f15523c1ed" />
 
 **如上图（a）中所示，LoRA由一个具有固定参数的$W_0$的预训练模块和一个具有可训练参数$A$、$B$的低秩分解模块组成。具体来说$A \in R^{r * d}$降低了秩，而$B \in R^{d * r}$恢复了秩，其中$r << d$，其前向传播过程表示为以下式子：**
 
-![alt text](image-2.png)
+<img width="455" height="48" alt="image-2" src="https://github.com/user-attachments/assets/a49068fa-c8e7-406b-a2dc-91a8cf1b26fe" />
 
 **LoRA主要用于迁移学习和领域适应，旨在通过冻结骨干网络，并仅更新一小部分参数来实现参数高效微调。相比之下，我们使用LoRA来实现完全不同的特征解耦目的，它作为核心结构组件插入到骨干网络中，以有效的方式同时学习共享特征和任务特征。多亏了这个结构，我们才得以实现行人搜索中两个子任务的特征分离**
 
@@ -48,11 +48,11 @@
 
 **为了实现这一目标，我们从MoE策略中得到灵感，让其中多个专家动态地处理不同的特征表示。如图2（b）所示，我们的空间SLoRA由预训练模块和SLM模块组成。SLM不依赖于固定的特征转换，而是引入了一组LoRA路径$\{AB_1, AB_2, ..., AB_n\}$，来为行人检测和Re-ID提供自适应和判别性特征提取。我们将不同的$B_i$视作专家$E_i$，SLM的前向传播式子如下：**
 
-![alt text](image-3.png)
+<img width="492" height="70" alt="image-3" src="https://github.com/user-attachments/assets/ea2b002b-5f09-4158-8a50-606e2d7cdd20" />
 
 **每个$E_iAx$都会捕获与任务相关的不同空间模式，用于检测和Re-ID，其贡献由可学习的空间级路由器动态调节。具体来说，路由器使用变换矩阵$W_g \in R^{d * n}$来计算任务感知路由器权重$\omega_i^s$，然后再跟一个激活函数如下：**
 
-![alt text](image-4.png)
+<img width="438" height="56" alt="image-4" src="https://github.com/user-attachments/assets/b111f37d-469a-41f6-b717-d1f36cd7df52" />
 
 **简单说一下这个式子，其中$\xi()$表示激活函数softmax。得到的$\omega^s = \{M_1, M_2, ..., M_n\}$表示一组特征掩码，其中$M \in R^{H*W}$引导每个专家$E_i$关注特定任务的空间特征。这种自适应门控机制确保检测相关特征以及身份区分细节的有效分离**
 
@@ -62,17 +62,17 @@
 
 **为了解决这个问题，FLM首先应用了2维离散傅里叶变换$\mathcal{T}_f()$，它通过FFT实现了将空间特征转换到频域，式子如下：**
 
-![alt text](image-5.png)
+<img width="487" height="62" alt="image-5" src="https://github.com/user-attachments/assets/8c3c54bb-d560-4186-a3cd-1b55ce7a72c5" />
 
 **其中$\hat{x}^s$表示从图2（c）中的降秩模块A中获得的空间特征，即$\hat{x}^s = AX$。然后使用频率滤波器将频域特征$\hat{x}^f$分解为高频和低频信号，如下：**
 
-![alt text](image-7.png)
+<img width="692" height="227" alt="image-7" src="https://github.com/user-attachments/assets/e68aa9b2-beea-41c4-bd9e-55e2a1f58668" />
 
-![alt text](image-6.png)
+<img width="571" height="52" alt="image-6" src="https://github.com/user-attachments/assets/2e1f6b82-48bf-49be-b5bb-f1a1fd145258" />
 
 **虽然检测主要受益于低频信息，而Re-ID主要受益于高频信息，但严格隔离这两个部分会导致信息丢失问题。为了缓解这个问题，FLM引入了频率级路由器，它可以动态调制不同频率分量的贡献，细化后的频域特征可表示为：**
 
-![alt text](image-8.png)
+<img width="521" height="52" alt="image-8" src="https://github.com/user-attachments/assets/f9cc4618-6f25-4e6b-b0bd-cfc80de3d87c" />
 
 **通过选择性的增强与任务相关的频率信息，FLM减少了检测与Re-ID子任务之间的特征干扰，从而产生更加清晰稳健的表示。这种频率感知自适应补充了SLM的空间级解耦，确保了更加平衡和高效的单阶段行人搜索模型**
 
@@ -80,7 +80,7 @@
 
 **FSLoAR的前向传播式子如下：**
 
-![alt text](image-9.png)
+<img width="511" height="135" alt="image-9" src="https://github.com/user-attachments/assets/d80d3aa7-1ced-4a4c-903a-655be475d8ff" />
 
 **简单说一下这个式子，其中第一项表示共享特征，第二项表示对应于SLM输出的任务特征。这种设置可以实现任务特征在整个主干网络的完全解耦，有效地缓解了子任务之间的固有冲突。值得注意的是，我们在A和B之间插入的FLM，而不是在A之前。这样做能够将参数大小减少$d / r$倍，以节省训练期间的内存。减少是因为A有降秩作用，从原来的$d * d$变为$r * d$，参数大小就减少了$d / r$倍**
 
@@ -98,47 +98,47 @@
 
 **实验1：将FSLoRA分别应用到anchor-based方法NAE、anchor-free方法AlignPS，以及结合两者优势的ROI‑AlignPS上。实验结果表明，三个基线在mAP和Top‑1上均获得稳定且显著的提升（约 2 个百分点），即使是在强基线ROI‑AlignPS上依然有效。这说明FSLoRA具有良好的泛化性，可作为即插即用的适配模块，推广到各类一阶段行人搜索框架中**
 
-![alt text](image-10.png)
+<img width="627" height="322" alt="image-10" src="https://github.com/user-attachments/assets/0029a558-d66d-4b89-a3fc-e5b567a1169e" />
 
 **实验2：可视化了SLM输出的检测和Re‑ID任务特定特征图。结果显示，检测分支的特征图主要激活整个行人区域，确保模型准确定位；而Re‑ID分支则聚焦于头部、上衣等判别性局部区域。这一现象在室内外、拥挤、低光照及多尺度等复杂场景下均保持一致，验证了SLM在空间维度上成功实现了任务相关特征的分离**
 
-![alt text](image-11.png)
+<img width="657" height="495" alt="image-11" src="https://github.com/user-attachments/assets/fe4c8bd0-2838-4e30-af63-1c4a6ed78513" />
 
 **实验3：在PRW数据集上对SLM和FLM进行了消融实验。结果表明，单独加入SLM或FLM均能显著提升Re‑ID和检测性能（mAP分别提升2.25和2.37个百分点），证明两个模块各自有效。而两者联合使用时取得最佳效果（mAP 59.11，Top‑1 88.99，检测AP 92.55），验证了空间域与频域解耦具有互补性，联合优化能进一步缓解检测与Re‑ID的任务冲突**
 
-![alt text](image-12.png)
+<img width="672" height="261" alt="image-12" src="https://github.com/user-attachments/assets/ffb9c0bc-d80a-4212-a9e0-ffd56b297453" />
 
 **实验4：通过可视化FLM前后的特征图及振幅谱变化，分析了FLM的作用机制。结果显示，检测分支经过FLM后特征更平滑，低频成分被强调；而Re‑ID分支则更突出边缘与纹理等高频细节。右侧的频域权重统计进一步验证了这一趋势：检测分支的低频权重大于高频，Re‑ID分支则相反。这表明FLM能根据任务需求自适应地调节频率成分，有效实现频域特征解耦**
 
-![alt text](image-13.png)
+<img width="1335" height="380" alt="image-13" src="https://github.com/user-attachments/assets/2e674645-491c-4de7-b2e2-00fdb4c491cc" />
 
 **实验5：比较了FLM在不同插入位置下的性能差异。实验发现，将FLM置于A与SLM之间（即低秩空间中）不仅取得最佳性能（mAP 59.11），同时参数量最少。其他排列方式虽也有提升，但参数量增加约96K，且性能略低。这验证了FLM放置在A和B之间的设计既能保证解耦效果，又能节省显存和参数**
 
-![alt text](image-14.png)
+<img width="648" height="182" alt="image-14" src="https://github.com/user-attachments/assets/610bd506-15ee-48ec-8d2e-56c553a30f80" />
 
 **实验6：本文在固定总参数量、固定秩和固定专家数三种条件下分析了n和r的影响，实验确定最优配置为n = 2, r = 32：过多专家阻碍共享知识、过少专家分离能力不足；增大r可提性能但参数量快速膨胀，r = 32为最佳平衡点**
 
-![alt text](image-15.png)
+<img width="1372" height="227" alt="image-15" src="https://github.com/user-attachments/assets/734aadd6-150d-4aae-bfe4-ee7a077db3fb" />
 
 **实验7：进一步分析了FLM中低通和高通滤波器的截止频率对性能的影响。结果显示，性能随截止频率偏离最优范围而下降：低通截止过低会过度抑制Re‑ID所需的高频细节，过高则削弱检测依赖的结构信息；高通截止同样存在类似权衡。当低通设为30、高通设为40时性能最佳，说明合理的频带划分能有效调和检测与Re‑ID对频率信息的不同需求**
 
-![alt text](image-16.png)
+<img width="622" height="352" alt="image-16" src="https://github.com/user-attachments/assets/646ae1bd-4eff-4fc0-9b13-1c75904798c0" />
 
 ### 4.4. 和SOTA方法进行比较
 
-![alt text](image-19.png)
+<img width="683" height="777" alt="image-19" src="https://github.com/user-attachments/assets/901570ac-1105-45e8-a547-630a15e28ada" />
 
 **实验1：在CUHK-SYSU数据集上，FSLoRA达到96.6% mAP和97.0% Top-1，刷新了该数据集的最优记录。为验证大规模场景下的鲁棒性，本文还测试了不同gallery大小下的性能变化。结果显示，所有方法的mAP均随gallery增大而下降，但FSLoRA始终领先且衰减最平缓，证明了其在更大搜索空间中的稳定性**
 
-![alt text](image-17.png)
+<img width="655" height="420" alt="image-17" src="https://github.com/user-attachments/assets/67487adc-dfd8-4162-9e98-ca67fc6cc96a" />
 
 **实验2：在PRW数据集上，FSLoRA达到61.3% mAP和89.6% Top-1，显著优于此前最优结果。此外，本文还在PRW的多视角（multi-view）gallery设置下进行了评估——该设置要求模型跨不同摄像头视角匹配同一目标，视角差异会加剧特征不一致。在此更困难条件下，FSLoRA仍取得58.6% mAP 和81.3% Top-1，远超对比方法，证明了其对视角变化的鲁棒性**
 
-![alt text](image-18.png)
+<img width="661" height="131" alt="image-18" src="https://github.com/user-attachments/assets/978cc443-e0c5-41dd-8849-2b3eb6418f6f" />
 
 **实验3：在PoseTrack21数据集上，FSLoRA达到70.25% mAP和90.10% Top-1，显著超越此前最优方法SeqNet（65.12% mAP），验证了其在遮挡和多人查询等复杂场景下的鲁棒性**
 
-![alt text](image-20.png)
+<img width="541" height="358" alt="image-20" src="https://github.com/user-attachments/assets/03aa9d97-bcf0-4e81-a394-a8cd8f3e6dd7" />
 
 ## 5. 总结
 
